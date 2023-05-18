@@ -1,0 +1,24 @@
+name: Build and Ship
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build_and_ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |-
+            ghcr.io/corrupt952/revealer:${{ github.sha }},
+            ghcr.io/corrupt952/revealer:${{ github.ref_name }},
+            ghcr.io/corrupt952/revealer:latest
