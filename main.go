@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -63,6 +64,20 @@ func (r *Response) String() string {
 	return string(json)
 }
 
+func getHeaders(r *http.Request) http.Header {
+	keys := make([]string, 0, len(r.Header))
+	for k := range r.Header {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	headers := make(http.Header)
+	for _, k := range keys {
+		headers[k] = r.Header[k]
+	}
+	return headers
+}
+
 func buildResponse(r *http.Request) (Response, error) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -70,7 +85,7 @@ func buildResponse(r *http.Request) (Response, error) {
 	}
 	response := Response{
 		RemoteAddr: r.RemoteAddr,
-		Headers:    r.Header,
+		Headers:    getHeaders(r),
 		Body:       string(body),
 		Query:      r.URL.Query().Encode(),
 	}
