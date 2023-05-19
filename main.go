@@ -7,7 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -50,10 +52,10 @@ func loggingMiddleware(next http.Handler) http.Handler {
  * Handlers
  */
 type Response struct {
-	RemoteAddr string      `json:"remote_addr"`
-	Headers    http.Header `json:"headers"`
-	Body       string      `json:"body"`
-	Query      string      `json:"query"`
+	IP      string      `json:"ip"`
+	Headers http.Header `json:"headers"`
+	Body    string      `json:"body"`
+	Query   string      `json:"query"`
 }
 
 func (r *Response) String() string {
@@ -62,6 +64,32 @@ func (r *Response) String() string {
 		return fmt.Sprintf("{\"error\": \"%s\"}", err)
 	}
 	return string(json)
+}
+
+var TRUSTED_PROXIES = []string{
+	`^127\.0\.0\.1$`,
+	`^::1$`,
+	`^fc00:`,
+	`^10\.`,
+	`^172\.(1[6-9]|2[0-9]|3[0-1])\.`,
+	`^192\.168\.`,
+}
+var TRUSTED_PROXY_REGEXP = regexp.MustCompile(strings.Join(TRUSTED_PROXIES, "|"))
+
+func getClientIP(r *http.Request) string {
+	remoteAddr := r.RemoteAddr
+	clientIps := strings.Split(r.Header.Get("Client-Ip"), ",")
+	forwardedIps := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
+
+	ips := clientIps[:0]
+	ips = append(ips, forwardedIps...)
+	ips = append(ips, remoteAddr)
+	for _, ip := range ips {
+		if ip != "" && !TRUSTED_PROXY_REGEXP.MatchString(ip) {
+			return ip
+		}
+	}
+	return remoteAddr
 }
 
 func getHeaders(r *http.Request) http.Header {
@@ -84,10 +112,10 @@ func buildResponse(r *http.Request) (Response, error) {
 		return Response{}, err
 	}
 	response := Response{
-		RemoteAddr: r.RemoteAddr,
-		Headers:    getHeaders(r),
-		Body:       string(body),
-		Query:      r.URL.Query().Encode(),
+		IP:      getClientIP(r),
+		Headers: getHeaders(r),
+		Body:    string(body),
+		Query:   r.URL.Query().Encode(),
 	}
 	return response, nil
 }
