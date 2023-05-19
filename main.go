@@ -52,10 +52,13 @@ func loggingMiddleware(next http.Handler) http.Handler {
  * Handlers
  */
 type Response struct {
-	IP      string      `json:"ip"`
-	Headers http.Header `json:"headers"`
-	Body    string      `json:"body"`
-	Query   string      `json:"query"`
+	IP       string      `json:"ip"`
+	Protocol string      `json:"protocol"`
+	Host     string      `json:"host"`
+	URI      string      `json:"uri"`
+	Query    string      `json:"query"`
+	Headers  http.Header `json:"headers"`
+	Body     string      `json:"body"`
 }
 
 func (r *Response) String() string {
@@ -112,11 +115,15 @@ func buildResponse(r *http.Request) (Response, error) {
 		return Response{}, err
 	}
 	response := Response{
-		IP:      getClientIP(r),
-		Headers: getHeaders(r),
-		Body:    string(body),
-		Query:   r.URL.Query().Encode(),
+		IP:       getClientIP(r),
+		Protocol: r.Proto,
+		Host:     r.Host,
+		URI:      r.RequestURI,
+		Query:    r.URL.Query().Encode(),
+		Headers:  getHeaders(r),
+		Body:     string(body),
 	}
+
 	return response, nil
 }
 
