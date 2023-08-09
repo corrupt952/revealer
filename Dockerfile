@@ -1,4 +1,4 @@
-FROM golang:1.20.7 AS builder
+FROM golang:1.21.0 AS builder
 WORKDIR /go/src/app
 COPY . .
 RUN GOARCH=amd64 CGO_ENABLED=0 go build -o env-revealer ./...
