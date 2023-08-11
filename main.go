@@ -129,6 +129,7 @@ func buildResponse(r *http.Request) (Response, error) {
 
 func main() {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		response, err := buildResponse(r)
 		if err != nil {
 			fmt.Fprintf(w, "{\"error\": \"%s\"}\n", err)
